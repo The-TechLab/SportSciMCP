@@ -1,0 +1,27 @@
+injury: ACL reconstruction
+notes: Criterion-based progression — adapt to surgeon protocol and sport demands.
+references:
+  - "PubMed — ACL return to sport criteria (search via SportSciMCP)"
+phases:
+  early:
+    title: Early rehabilitation (0–6 weeks)
+    criteria:
+      - Full knee extension; flexion >120°
+      - Minimal effusion; good quadriceps activation (e.g. SLR without lag)
+      - Normalize gait pattern
+      - Pain-free bike / pool activity as tolerated
+  return_to_train:
+    title: Return to training (approx. 3–6 months+)
+    criteria:
+      - Quad strength LSI >85–90% (isometric / isokinetic per protocol)
+      - Hop test battery LSI >90%
+      - Single-leg squat / movement quality acceptable
+      - Psychological readiness (e.g. ACL-RSI)
+  return_to_play:
+    title: Return to play (sport-specific)
+    criteria:
+      - All return-to-train criteria met
+      - Sport-specific drills without pain/effusion
+      - Deceleration / cutting progression completed
+      - Cleared by surgeon and rehab team
+      - Maintenance strength program in place

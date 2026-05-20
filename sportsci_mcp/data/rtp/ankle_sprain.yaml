@@ -1,0 +1,14 @@
+injury: Ankle sprain (lateral)
+phases:
+  return_to_train:
+    title: Return to training
+    criteria:
+      - Full ROM; minimal swelling
+      - Single-leg balance targets met
+      - Jogging and change of direction pain-free
+  return_to_play:
+    title: Return to play
+    criteria:
+      - Hop symmetry acceptable
+      - Sport drills without instability
+      - Taping/brace plan if indicated

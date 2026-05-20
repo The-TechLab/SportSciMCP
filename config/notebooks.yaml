@@ -1,0 +1,32 @@
+# NotebookLM notebook aliases → UUID (The-TechLab account)
+# Use notebooklm_add_source with notebook: acl_rehab
+
+default: acl_rehab
+
+notebooks:
+  ai_stem_lab:
+    id: ebd96975-d8fa-46e3-bf21-25fe67b290bf
+    title: AI STEM Lab
+  qai_lab:
+    id: bf43758b-3334-4a06-ac2d-69b296904445
+    title: QAI Lab
+  the_tech_lab:
+    id: f851c1f1-f96c-408b-886a-564a825711fa
+    title: The Tech Lab
+  star_labs:
+    id: 9bdf0f36-0404-4851-a879-ec09e26e324d
+    title: Star Labs
+  research_papers:
+    id: 7ec68b76-bec8-4688-8de2-3ac220edfdf5
+    title: Research Papers and Ideas
+  guardian_vision:
+    id: accae133-911d-428b-a09b-3e48af53ca49
+    title: GuardianVision - QAI Project
+  acl_rehab:
+    id: 003a9d30-c97e-4287-af76-8cb2cc5ce23f
+    title: ACL_Rehab_Research
+  sports_injury_ml:
+    id: 58666547-1fe3-42fe-8ffe-83f2d55f6b79
+    title: AI-Driven Optimization and Injury Prevention in Sports
+
+briefs_dir: /home/will/QAI-Lab-Drive/research-briefs

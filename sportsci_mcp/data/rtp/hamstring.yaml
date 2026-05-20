@@ -1,0 +1,14 @@
+injury: Hamstring strain
+phases:
+  return_to_train:
+    title: Return to training
+    criteria:
+      - Pain-free walking and jogging
+      - HHD / isokinetic strength asymmetry <10%
+      - Progressive running program completed
+  return_to_play:
+    title: Return to play
+    criteria:
+      - Max velocity runs without pain
+      - Sport-specific high-speed actions completed
+      - Nordboard / eccentric strength targets met per protocol

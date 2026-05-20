@@ -1,0 +1,43 @@
+# Curated reference values — verify against primary sources before clinical decisions.
+
+metrics:
+  cmj_height_cm:
+    description: Countermovement jump height (CMJ)
+    unit: cm
+    source: "Illustrative ranges — replace with your lab norms"
+    values:
+      - sex: male
+        sport: soccer
+        level: collegiate
+        range: [30, 45]
+        mean: 37
+      - sex: female
+        sport: soccer
+        level: collegiate
+        range: [22, 35]
+        mean: 28
+
+  sprint_10m_s:
+    description: 10 m sprint time
+    unit: seconds
+    source: "Lower is faster"
+    values:
+      - sex: male
+        sport: field_sport
+        level: collegiate
+        range: [1.55, 1.85]
+      - sex: female
+        sport: field_sport
+        level: collegiate
+        range: [1.75, 2.05]
+
+  y_balance_composite:
+    description: Y-Balance Test composite reach (% leg length)
+    unit: percent
+    source: "Asymmetry >4 cm or <95% composite may warrant follow-up"
+    values:
+      - sex: any
+        sport: any
+        level: any
+        range: [94, 105]
+        note: "Compare left/right asymmetry"

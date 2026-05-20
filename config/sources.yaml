@@ -1,0 +1,79 @@
+# Enable/disable any source. Users only need credentials for sources they use.
+# Keys go in ~/.cursor/mcp-secrets.env (loaded by sportscience.sh).
+
+literature:
+  pubmed:
+    enabled: true
+    phase: 1
+  openalex:
+    enabled: true
+    phase: 1
+  ssrn:
+    enabled: true
+    phase: 1
+    mode: scrape
+  arxiv:
+    enabled: true
+    phase: 2
+  semantic_scholar:
+    enabled: true
+    phase: 2
+    api_key_env: SEMANTIC_SCHOLAR_API_KEY
+    requires_auth: false
+    notes: "Optional key for rate limits"
+  core:
+    enabled: true
+    phase: 2
+    api_key_env: CORE_API_KEY
+    requires_auth: false
+    notes: "Works without key; key unlocks full text limits"
+  dimensions:
+    enabled: true
+    phase: 2
+    api_key_env: DIMENSIONS_API_KEY
+    requires_auth: true
+    notes: "https://app.dimensions.ai — API key required"
+  scorenetwork:
+    enabled: true
+    phase: 2
+    mode: scrape
+    notes: "SCORE Network — HTML discovery at scorenetwork.org"
+
+datasets:
+  zenodo:
+    enabled: true
+    phase: 2
+  physionet:
+    enabled: true
+    phase: 2
+    notes: "physionet.org — index filter; credentialed download on site"
+  kaggle:
+    enabled: true
+    phase: 2
+    requires_auth: true
+    credentials_env:
+      - KAGGLE_USERNAME
+      - KAGGLE_KEY
+  simtk:
+    enabled: true
+    phase: 2
+    mode: scrape
+    notes: "simtk.org — biomechanics / simulation projects"
+  motrpac:
+    enabled: true
+    phase: 2
+    mode: scrape
+    notes: "motrpac-data.org — exercise omics program"
+  mendeley_data:
+    enabled: true
+    phase: 2
+    api_key_env: MENDELEY_ACCESS_TOKEN
+    requires_auth: false
+    notes: "HTML search; optional Mendeley API token"
+
+scrape:
+  generic:
+    enabled: true
+    phase: 1
+    user_agent: "SportSciMCP/0.3 (research; mailto:will@thetechlab.info)"
+  respect_robots: false
