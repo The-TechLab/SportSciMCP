@@ -1,41 +1,60 @@
 # SportSciMCP
 
-**Your sports-science research desk inside any AI assistant.**
+**v0.4** · Your sports-science research desk inside any AI assistant.
 
-SportSciMCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server built for people who work at the intersection of **research, performance, and injury science**. It connects your AI tools to PubMed, open datasets, biomechanics repositories, training-load spreadsheets, return-to-play checklists, and Google NotebookLM — without opening fifteen browser tabs.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-compatible-purple.svg)](https://modelcontextprotocol.io)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/)
 
-Use it in **Cursor**, **Claude Desktop**, **Gemini**, **GitHub Copilot**, **OpenAI Codex**, or any client that supports MCP. You talk in plain English; the server runs the searches, parsing, and formatting.
+SportSciMCP is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for **research, performance, and injury science**. Search literature and datasets across PubMed, OSF, Figshare, PhysioNet, Kaggle, and more — run training-load analysis, RTP checklists, and pipe YouTube lectures into NotebookLM — all from one conversation.
 
-> **You do not need every API key.** Enable only the sources you want in `config/sources.yaml` and add keys only for those services.
+Works with **Cursor**, **Claude Desktop**, **Gemini**, **GitHub Copilot**, **OpenAI Codex**, and **Cursor Agent**.
+
+> **Pick what you use.** Enable sources in `config/sources.yaml`. Add API keys only for the services you turn on. Everything else keeps working.
+
+**Repository:** https://github.com/The-TechLab/SportSciMCP
 
 ---
 
-## What problem does this solve?
+## Table of contents
 
-| Without SportSciMCP | With SportSciMCP |
-|---------------------|------------------|
-| Manual PubMed + dataset hunting | One prompt across many sources |
-| Copy-pasting abstracts into notes | `save_research_brief` → markdown on disk |
-| Guessing RTP criteria | `rtp_checklist` from curated YAML |
-| sRPE spreadsheets by hand | `parse_session_csv` + `calc_training_load` (ACWR) |
-| Feeding NotebookLM one link at a time | `notebooklm_add_source` via `nlm` CLI |
+- [Why SportSciMCP?](#why-sportscimcp)
+- [Compatible AI clients](#compatible-ai-clients)
+- [Quick start](#quick-start)
+- [Sources at a glance](#sources-at-a-glance)
+- [API keys](#api-keys)
+- [Tools](#tools)
+- [Sample prompts](#sample-prompts)
+- [YouTube → TranscriptMCP → NotebookLM](#youtube--transcriptmcp--notebooklm)
+- [Configuration](#configuration)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+
+---
+
+## Why SportSciMCP?
+
+| Without it | With SportSciMCP |
+|------------|------------------|
+| Tab-hopping PubMed, OSF, Zenodo, Kaggle | `search_all` — one prompt, many sources |
+| Manual abstract copy-paste | `save_research_brief` → markdown on disk |
+| Guesswork on return-to-play | `rtp_checklist` (ACL, hamstring, ankle) |
+| Spreadsheet load math by hand | `parse_session_csv` + `calc_training_load` (ACWR) |
+| YouTube lecture → notes by hand | `ingest_youtube_research` → transcript → NotebookLM |
 
 ---
 
 ## Compatible AI clients
 
-SportSciMCP speaks standard MCP over **stdio**. Wire it once; use it anywhere your client supports custom MCP servers:
+SportSciMCP uses MCP over **stdio**. Configure once per client:
 
-| Client | How to connect |
-|--------|----------------|
-| **Cursor** | `~/.cursor/mcp.json` + wrapper script (below) |
-| **Claude Desktop** | `claude_desktop_config.json` → `mcpServers` |
-| **Gemini** | MCP-compatible Gemini tooling / extensions that accept stdio servers |
-| **GitHub Copilot** | VS Code MCP configuration (when MCP servers are enabled) |
-| **OpenAI Codex** | MCP server entry in your agent environment |
-| **Cursor Agent / Cloud** | Same MCP config as Cursor desktop |
-
-Example MCP entry (adjust paths):
+| Client | Config location |
+|--------|-----------------|
+| **Cursor** / **Cursor Agent** | `~/.cursor/mcp.json` |
+| **Claude Desktop** | `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) |
+| **Gemini** | MCP-capable Gemini tooling that accepts stdio servers |
+| **GitHub Copilot** | VS Code MCP settings (when enabled) |
+| **OpenAI Codex** | Agent / IDE MCP server list |
 
 ```json
 {
@@ -48,34 +67,33 @@ Example MCP entry (adjust paths):
 }
 ```
 
+Restart your client after adding the server.
+
 ---
 
 ## Quick start
 
-### 1. Clone and install
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/The-TechLab/SportSciMCP.git
 cd SportSciMCP
 
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
-### 2. (Optional) API keys
-
-Only add keys for sources you will use. Copy the template:
+### 2. Optional — API keys
 
 ```bash
-mkdir -p ~/.cursor
 cp config/secrets.example.env ~/.cursor/mcp-secrets.env
-# Edit and uncomment the keys you need
+# Edit: uncomment only the keys you need
 ```
 
-### 3. Cursor wrapper (recommended)
+### 3. Wrapper script (Cursor example)
 
-Create `~/.cursor/mcp-wrappers/sportscience.sh`:
+`~/.cursor/mcp-wrappers/sportscience.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -87,189 +105,304 @@ if [[ -f "$HOME/.cursor/mcp-secrets.env" ]]; then
   set +a
 fi
 export PYTHONPATH="/absolute/path/to/SportSciMCP${PYTHONPATH:+:$PYTHONPATH}"
-exec /absolute/path/to/.venv/bin/python -m sportsci_mcp.server
+exec /absolute/path/to/SportSciMCP/.venv/bin/python -m sportsci_mcp.server
 ```
 
 ```bash
 chmod +x ~/.cursor/mcp-wrappers/sportscience.sh
 ```
 
-Add to `~/.cursor/mcp.json` (see table above), then **restart Cursor**.
-
 ### 4. Verify
 
-Ask your agent:
-
-> *"Use SportSciMCP list_sources and tell me which sources are active."*
+> *"Use SportSciMCP `list_sources` — which sources are active?"*
 
 ---
 
-## API keys — what you need (and what you don't)
+## Sources at a glance
 
-### No key required (works out of the box)
+### Literature (papers & preprints)
 
-| Source | Type | Best for |
-|--------|------|----------|
-| **pubmed** | Literature | Peer-reviewed biomedical papers |
-| **openalex** | Literature | Broad scholarly metadata + open access links |
-| **ssrn** | Literature | Working papers (HTML search) |
-| **arxiv** | Literature | Preprints (ML, methods, theory) |
-| **core** | Literature | Open-access full-text aggregation ([core.ac.uk](https://core.ac.uk)) |
-| **scorenetwork** | Literature | Concussion / SCORE resources ([scorenetwork.org](https://www.scorenetwork.org)) |
-| **osf** | Literature | Open preprints ([osf.io](https://osf.io)) |
-| **zenodo** | Datasets | General research datasets |
-| **figshare** | Datasets | Research outputs ([figshare.com](https://figshare.com)) |
-| **physionet** | Datasets | Physiology & biomedical signals ([physionet.org](https://physionet.org)) |
-| **simtk** | Datasets | Biomechanics simulation projects ([simtk.org](https://simtk.org)) |
-| **motrpac** | Datasets | Exercise omics ([motrpac-data.org](https://motrpac-data.org)) |
-| **mendeley_data** | Datasets | Shared datasets ([data.mendeley.com](https://data.mendeley.com)) — HTML search |
-| **osf** | Literature | Open preprints ([osf.io](https://osf.io)) |
-| **figshare** | Datasets | Research outputs ([figshare.com](https://figshare.com)) |
-| **scrape_url** | Web | Any public guideline or article page |
+| Source | Site | Key? |
+|--------|------|------|
+| pubmed | [PubMed](https://pubmed.ncbi.nlm.nih.gov) | No |
+| openalex | [OpenAlex](https://openalex.org) | No |
+| ssrn | [SSRN](https://www.ssrn.com) | No (HTML search) |
+| arxiv | [arXiv](https://arxiv.org) | No |
+| semantic_scholar | [Semantic Scholar](https://www.semanticscholar.org) | Optional |
+| core | [CORE](https://core.ac.uk) | Optional |
+| dimensions | [Dimensions.ai](https://app.dimensions.ai) | **Required** |
+| scorenetwork | [SCORE Network](https://www.scorenetwork.org) | No (HTML) |
+| osf | [OSF](https://osf.io) | No |
+| sportdiscus | [SPORTDiscus](https://www.ebsco.com/products/research-databases/sportdiscus) | **EBSCO** (institutional) |
 
-Optional env vars (polite pools, not required): `PUBMED_EMAIL`, `OPENALEX_EMAIL`
+### Datasets
 
----
+| Source | Site | Key? |
+|--------|------|------|
+| zenodo | [Zenodo](https://zenodo.org) | No |
+| physionet | [PhysioNet](https://physionet.org) | No |
+| figshare | [Figshare](https://figshare.com) | No |
+| simtk | [SimTK](https://simtk.org) | No (HTML) |
+| motrpac | [MoTrPAC](https://motrpac-data.org) | No (HTML) |
+| mendeley_data | [Mendeley Data](https://data.mendeley.com) | Optional |
+| kaggle | [Kaggle](https://www.kaggle.com) | **Required** |
 
-### Optional keys (better limits or richer data)
+### Other
 
-| Variable | Source | Get a key | Why bother? |
-|----------|--------|-----------|-------------|
-| `CORE_API_KEY` | CORE | [core.ac.uk/api-keys/register](https://core.ac.uk/api-keys/register) | Higher rate limits, full-text access |
-| `SEMANTIC_SCHOLAR_API_KEY` | Semantic Scholar | [semanticscholar.org/product/api](https://www.semanticscholar.org/product/api) | Avoid 429 rate limits on heavy use |
-| `MENDELEY_ACCESS_TOKEN` | Mendeley Data | [dev.mendeley.com](https://dev.mendeley.com/) | API search instead of HTML scrape |
+| Tool | Purpose |
+|------|---------|
+| scrape_url | Any public web page → title + text |
 
----
-
-### Required keys (only if you enable that source)
-
-| Variable | Source | Get a key |
-|----------|--------|-----------|
-| `DIMENSIONS_API_KEY` | [Dimensions.ai](https://app.dimensions.ai) | Dimensions account → API access |
-| `KAGGLE_USERNAME` + `KAGGLE_KEY` | [Kaggle](https://www.kaggle.com) | Account → Settings → API → Create token |
-| `EBSCO_USER_ID` + `EBSCO_PASSWORD` | [SPORTDiscus](https://www.ebsco.com/products/research-databases/sportdiscus) | Your university library EBSCO login |
-| `EBSCO_PROFILE` | EBSCO | Optional; default `eds` |
-
-If these are missing, SportSciMCP **skips** those sources and tells you why in `list_sources` — everything else still works.
+Disable any row in `config/sources.yaml` with `enabled: false`.
 
 ---
 
-### Pick your stack (`config/sources.yaml`)
+## API keys
 
-Turn off anything you do not need:
+### None needed (13+ sources work immediately)
+
+PubMed, OpenAlex, SSRN, arXiv, CORE (no key), OSF, Figshare, PhysioNet, SimTK, MoTrPAC, SCORE Network, Zenodo, and generic `scrape_url`.
+
+Optional politeness env vars: `PUBMED_EMAIL`, `OPENALEX_EMAIL`
+
+### Optional (better limits)
+
+| Variable | Where to get it |
+|----------|-----------------|
+| `CORE_API_KEY` | [core.ac.uk/api-keys/register](https://core.ac.uk/api-keys/register) |
+| `SEMANTIC_SCHOLAR_API_KEY` | [semanticscholar.org/product/api](https://www.semanticscholar.org/product/api) |
+| `MENDELEY_ACCESS_TOKEN` | [dev.mendeley.com](https://dev.mendeley.com/) |
+
+### Required only if you use that source
+
+| Variables | Source |
+|-----------|--------|
+| `DIMENSIONS_API_KEY` | Dimensions.ai |
+| `KAGGLE_USERNAME` + `KAGGLE_KEY` | Kaggle → Settings → API |
+| `EBSCO_USER_ID` + `EBSCO_PASSWORD` | Your university library (SPORTDiscus) |
+| `EBSCO_PROFILE` | Optional; default `eds` |
+
+Missing keys → source is **skipped** with a clear message in `list_sources`. No crash, no blocking other sources.
+
+### TranscriptMCP (YouTube pipeline only)
+
+| Variable | Purpose |
+|----------|---------|
+| `TRANSCRIPT_MCP_PATH` | Path to [TranscriptMCP](https://github.com/The-TechLab/TranscriptMCP) if not cloned as `../TranscriptMCP` |
+
+Template: `config/secrets.example.env`
+
+---
+
+## Tools
+
+### Discovery
+
+| Tool | What it does |
+|------|----------------|
+| `list_sources` | Show active sources, phases, credential status |
+| `search_literature` | Papers across enabled literature sources |
+| `search_datasets` | Datasets across enabled dataset sources |
+| **`search_all`** | **Literature + datasets in one call** |
+| `get_record` | Fetch one item (`pubmed:123`, `osf:abc`, `figshare:99`, …) |
+| `scrape_url` | Public URL → extracted text |
+
+### Research workflow
+
+| Tool | What it does |
+|------|----------------|
+| `save_research_brief` | Markdown brief on disk |
+| `papers_to_bibtex` | Refs → BibTeX |
+| `format_for_notebooklm` | Notebook-ready markdown |
+| `compare_papers` | Comparison table (2–5 papers) |
+| `build_literature_review_outline` | IMRaD outline from topic + refs |
+
+### Applied sports science
+
+| Tool | What it does |
+|------|----------------|
+| `parse_session_csv` | Parse GPS / sRPE / load CSV |
+| `calc_training_load` | Load, acute/chronic, **ACWR**, spike flags |
+| `lookup_norms` | CMJ, sprint, Y-balance ([`data/norms.yaml`](sportsci_mcp/data/norms.yaml)) |
+| `rtp_checklist` | ACL, hamstring, ankle ([`data/rtp/`](sportsci_mcp/data/rtp/)) |
+
+### NotebookLM & YouTube
+
+| Tool | What it does |
+|------|----------------|
+| `notebooklm_list_notebooks` | Aliases from config + live `nlm` list |
+| `notebooklm_add_source` | Add URL or text via `nlm` CLI |
+| **`ingest_youtube_research`** | **YouTube → TranscriptMCP → NotebookLM** |
+
+Requires `nlm login` for NotebookLM tools. See [YouTube pipeline](#youtube--transcriptmcp--notebooklm) below.
+
+---
+
+## Sample prompts
+
+Copy into Cursor, Claude, Gemini, Copilot, or Codex.
+
+### Unified search
+
+```
+search_all for "ACL return to sport" — literature and datasets,
+max 5 per source. Use pubmed, openalex, osf, zenodo, figshare.
+```
+
+```
+search_all on hamstring injury prevention since 2020.
+```
+
+### Literature
+
+```
+Search literature on concussion using pubmed, core, and scorenetwork.
+Save briefs for the top 5 results.
+```
+
+```
+Compare pubmed:38123456 and openalex:W123 — table and evidence gaps.
+```
+
+```
+Build a literature review outline on Nordic hamstring programs
+using these refs: [paste refs].
+```
+
+### Datasets
+
+```
+Search datasets for GPS football tracking on zenodo, figshare, and physionet.
+```
+
+```
+Find exercise omics data on motrpac and kaggle for endurance training.
+```
+
+### Clinical & performance
+
+```
+RTP checklist for ACL, phase return_to_play.
+```
+
+```
+Lookup norms for cmj_height_cm — female, soccer, collegiate.
+```
+
+```
+Parse ~/data/team_srpe.csv and calculate ACWR (7-day acute, 28-day chronic).
+```
+
+### NotebookLM & web
+
+```
+Format pubmed:36234567 for NotebookLM and add to acl_rehab.
+```
+
+```
+Scrape https://example.com/guideline and save a brief tagged rtp.
+```
+
+### Admin
+
+```
+list_sources — show active sources and which need API keys.
+```
+
+---
+
+## YouTube → TranscriptMCP → NotebookLM
+
+The **`ingest_youtube_research`** tool runs a full pipeline:
+
+```
+YouTube URL
+    → TranscriptMCP (yt-dlp + Whisper)
+    → formatted markdown
+    → NotebookLM (nlm source add)
+    → optional research brief on disk
+```
+
+### Prerequisites
+
+1. **[TranscriptMCP](https://github.com/The-TechLab/TranscriptMCP)** cloned beside SportSciMCP:
+   ```
+   MCP Servers/
+   ├── SportSciMCP/
+   └── TranscriptMCP/
+   ```
+2. TranscriptMCP dependencies installed (`yt-dlp`, `faster-whisper`, `ffmpeg`)
+3. **`nlm login`** for NotebookLM
+4. Notebook alias in `config/notebooks.yaml` (e.g. `acl_rehab`)
+
+### Example prompt
+
+```
+Ingest this YouTube lecture into acl_rehab:
+https://www.youtube.com/watch?v=VIDEO_ID
+Save a brief tagged youtube.
+```
+
+### What you get back
+
+- Transcript preview + length  
+- NotebookLM add status  
+- Optional brief file path  
+
+---
+
+## Configuration
+
+| File | Purpose |
+|------|---------|
+| `config/sources.yaml` | Enable/disable each source |
+| `config/notebooks.yaml` | NotebookLM notebook aliases → UUIDs |
+| `config/secrets.example.env` | API key template |
+| `sportsci_mcp/data/norms.yaml` | Performance norms (edit for your lab) |
+| `sportsci_mcp/data/rtp/*.yaml` | RTP checklists (edit with your protocol) |
+
+Example — turn off Kaggle:
 
 ```yaml
 datasets:
   kaggle:
-    enabled: false   # ← no Kaggle? disable here.
+    enabled: false
 ```
 
-Set `enabled: false` — no code changes required.
+Example — custom briefs folder:
+
+```bash
+export SPORTSCI_BRIEFS_DIR=~/research/briefs
+```
 
 ---
 
-## Tools reference
-
-### Discovery & records
-
-| Tool | Description |
-|------|-------------|
-| `list_sources` | Active sources, phases, credential status |
-| `search_literature` | Papers across enabled literature adapters |
-| `search_datasets` | Datasets across Zenodo, PhysioNet, SimTK, MoTrPAC, Mendeley, Figshare, … |
-| `search_all` | **Literature + datasets in one call** |
-| `get_record` | One item by ref (`pubmed:123`, `osf:abc`, `figshare:123`, …) |
-| `scrape_url` | Fetch a public URL → title + text (no API key) |
-
-### Research workflow
-
-| Tool | Description |
-|------|-------------|
-| `save_research_brief` | Save markdown brief (default: `~/QAI-Lab-Drive/research-briefs/`) |
-| `papers_to_bibtex` | PMIDs / refs → BibTeX |
-| `format_for_notebooklm` | Notebook-ready markdown |
-| `compare_papers` | Side-by-side table for 2–5 papers |
-| `build_literature_review_outline` | IMRaD outline from a topic + refs |
-
-### Applied sports science (Phase 3)
-
-| Tool | Description |
-|------|-------------|
-| `parse_session_csv` | Parse GPS / sRPE / load CSV files |
-| `calc_training_load` | Session load, acute/chronic load, **ACWR**, spike flags |
-| `lookup_norms` | CMJ, sprint, Y-balance (`sportsci_mcp/data/norms.yaml`) |
-| `rtp_checklist` | ACL, hamstring, ankle (`sportsci_mcp/data/rtp/`) |
-
-### NotebookLM + YouTube (uses your existing `nlm login`)
-
-| Tool | Description |
-|------|-------------|
-| `notebooklm_list_notebooks` | Config aliases + live notebook list |
-| `notebooklm_add_source` | Add URL or text to a notebook |
-| `ingest_youtube_research` | **YouTube → TranscriptMCP → NotebookLM** (optional brief) |
-
-Requires [TranscriptMCP](https://github.com/The-TechLab/TranscriptMCP) cloned next to SportSciMCP (or set `TRANSCRIPT_MCP_PATH`).
-
-Notebook aliases live in `config/notebooks.yaml` (e.g. `acl_rehab`, `ai_stem_lab`).
-
----
-
-## Sample prompts (copy into any MCP client)
-
-### Literature reviews
-
-- *"Search literature on **ACL return-to-sport criteria** using PubMed, OpenAlex, and CORE since 2019. Save briefs for the top 5."*
-- *"Find **hamstring injury prevention** papers on arXiv and Semantic Scholar, then build a literature review outline."*
-- *"Compare these papers: pubmed:38123456, openalex:W1234567890 — table plus gaps for discussion."*
-
-### Datasets & methods
-
-- *"Search datasets for **GPS football tracking** on Zenodo, Kaggle, and PhysioNet."*
-- *"Find **exercise genomics** data on MoTrPAC and Mendeley Data."*
-- *"Search SimTK for **OpenSim gait** projects."*
-
-### Clinical / performance
-
-- *"Give me the **ACL return_to_play** RTP checklist from SportSciMCP."*
-- *"Lookup norms for **cmj_height_cm**, female, soccer, collegiate."*
-- *"Parse `~/data/team_srpe.csv` and calculate **ACWR** with 7-day acute and 28-day chronic windows."*
-
-### Web + NotebookLM + YouTube
-
-- *"Scrape this guideline URL and save a research brief tagged `rtp`."*
-- *"Get pubmed:36234567, format for NotebookLM, and add to **acl_rehab**."*
-- *"**Ingest this YouTube lecture** into acl_rehab: [url] — transcribe and add to NotebookLM."*
-- *"List my NotebookLM notebook aliases and add this paper URL to QAI Lab."*
-
-### One-shot search
-
-- *"**search_all** for hamstring injury prevention — literature and datasets, max 5 per source."*
-- *"search_all on ACL graft, sources: pubmed, osf, zenodo, figshare only."*
-
-### Admin
-
-- *"Run `list_sources` and show which need API keys."*
-- *"Search literature on concussion from **scorenetwork** and CORE only."*
-
----
-
-## Architecture (30-second version)
+## Architecture
 
 ```
-Your AI (Cursor, Claude, Gemini, Copilot, Codex, …)
-        ↓ MCP stdio
-   SportSciMCP tools
-        ↓
-   Source adapters (pubmed, zenodo, core, …)
-        ↓
-   Public APIs + ethical HTML scrape
+┌─────────────────────────────────────────────────────────┐
+│  AI client (Cursor · Claude · Gemini · Copilot · Codex) │
+└─────────────────────────┬───────────────────────────────┘
+                          │ MCP stdio
+┌─────────────────────────▼───────────────────────────────┐
+│  SportSciMCP tools (search, load, RTP, YouTube, …)      │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        ▼                 ▼                 ▼
+   Literature         Datasets      Services
+   adapters           adapters      (load, rtp, nlm)
+   pubmed·osf·…       zenodo·…      youtube_pipeline
+        │                 │
+        ▼                 ▼
+   Public APIs      HTML scrape (ethical, no paywalls)
 ```
 
-- **Pluggable sources** — one file per site in `sportsci_mcp/adapters/`
-- **Unified record shape** — papers and datasets return the same JSON structure
-- **Fail soft** — missing keys skip that source; others keep running
+- **Pluggable adapters** — add a file under `sportsci_mcp/adapters/`
+- **Unified records** — same JSON shape for papers and datasets
+- **Fail soft** — missing credentials skip that source only
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for phase history and future plans.
+Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md) · Coming: **athleteOS** API (Phase 5)
 
 ---
 
@@ -278,25 +411,31 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for phase history and future plans.
 ```
 SportSciMCP/
 ├── config/
-│   ├── sources.yaml          # Enable/disable sources
-│   ├── notebooks.yaml        # NotebookLM aliases
-│   └── secrets.example.env   # API key template
+│   ├── sources.yaml
+│   ├── notebooks.yaml
+│   └── secrets.example.env
 ├── sportsci_mcp/
-│   ├── adapters/             # pubmed, core, kaggle, …
-│   ├── services/             # load, norms, rtp, notebooklm
-│   ├── data/                 # norms + RTP YAML (editable)
-│   └── server.py             # MCP entrypoint
+│   ├── adapters/          # pubmed, osf, figshare, kaggle, …
+│   ├── services/          # load, norms, rtp, notebooklm, youtube_pipeline
+│   ├── data/              # norms + RTP YAML
+│   └── server.py
 ├── docs/ROADMAP.md
 └── pyproject.toml
 ```
 
-Run manually: `python -m sportsci_mcp.server`
+Run locally: `python -m sportsci_mcp.server`
 
 ---
 
 ## Contributing
 
-PRs welcome — especially new **adapters** (follow `sportsci_mcp/adapters/base.py`) and expanded **norms/RTP** YAML. Keep sources opt-in via `config/sources.yaml`.
+PRs welcome for:
+
+- New **source adapters** (see `sportsci_mcp/adapters/base.py`)
+- Expanded **norms** and **RTP** YAML
+- Bug fixes on HTML-scrape sources (site layout changes)
+
+Keep new sources **opt-in** via `config/sources.yaml`.
 
 ---
 
@@ -308,5 +447,5 @@ MIT © [The Tech Lab](https://github.com/The-TechLab)
 
 <p align="center">
   <strong>Built for researchers, clinicians, and performance staff who live in the data.</strong><br>
-  Enable what you need. Ignore the rest. Ship the science.
+  Enable what you need · Ignore the rest · Ship the science
 </p>
