@@ -15,7 +15,10 @@ from sportsci_mcp.adapters.openalex import OpenAlexAdapter
 from sportsci_mcp.adapters.physionet import PhysioNetAdapter
 from sportsci_mcp.adapters.pubmed import PubMedAdapter
 from sportsci_mcp.adapters.scrape import ScrapeAdapter, SsrnAdapter
+from sportsci_mcp.adapters.osf import OsfAdapter
+from sportsci_mcp.adapters.figshare import FigshareAdapter
 from sportsci_mcp.adapters.semantic_scholar import SemanticScholarAdapter
+from sportsci_mcp.adapters.sportdiscus import SportDiscusAdapter
 from sportsci_mcp.adapters.zenodo import ZenodoAdapter
 from sportsci_mcp.config import credentials_status, entry_is_active, skip_reason, sources_config
 from sportsci_mcp.models import SearchRecord
@@ -29,6 +32,8 @@ LITERATURE_REGISTRY: dict[str, type[LiteratureAdapter]] = {
     "core": CoreAdapter,
     "dimensions": DimensionsAdapter,
     "scorenetwork": ScoreNetworkAdapter,
+    "osf": OsfAdapter,
+    "sportdiscus": SportDiscusAdapter,
 }
 
 DATASET_REGISTRY: dict[str, type[DatasetAdapter]] = {
@@ -38,6 +43,7 @@ DATASET_REGISTRY: dict[str, type[DatasetAdapter]] = {
     "simtk": SimtkAdapter,
     "motrpac": MotrpacAdapter,
     "mendeley_data": MendeleyDataAdapter,
+    "figshare": FigshareAdapter,
 }
 
 
@@ -56,8 +62,12 @@ def literature_adapters(names: list[str] | None = None) -> list[LiteratureAdapte
         if names and name not in names:
             continue
         entry = cfg.get(name) or {}
-        if entry_is_active(entry):
-            out.append(cls())
+        if not entry_is_active(entry):
+            continue
+        adapter = cls()
+        if name == "sportdiscus" and hasattr(adapter, "available") and not adapter.available():
+            continue
+        out.append(adapter)
     return out
 
 
@@ -162,6 +172,36 @@ def search_datasets(
     }
 
 
+def search_all(
+    query: str,
+    *,
+    literature_sources: list[str] | None = None,
+    dataset_sources: list[str] | None = None,
+    max_results_per_source: int = 10,
+    year_from: int | None = None,
+    year_to: int | None = None,
+) -> dict:
+    """Search literature and datasets in one call."""
+    lit = search_literature(
+        query,
+        sources=literature_sources,
+        max_results_per_source=max_results_per_source,
+        year_from=year_from,
+        year_to=year_to,
+    )
+    ds = search_datasets(
+        query,
+        sources=dataset_sources,
+        max_results_per_source=max_results_per_source,
+    )
+    return {
+        "query": query,
+        "literature": lit,
+        "datasets": ds,
+        "total": lit["total"] + ds["total"],
+    }
+
+
 def scrape_adapter() -> ScrapeAdapter:
     return ScrapeAdapter()
 
@@ -242,7 +282,12 @@ def list_sources_status() -> dict:
             "notes": "generic HTML; no API key",
         }
     )
-    return {"sources": items, "version": "0.3.0", "phase3_tools": _phase3_tools_status()}
+    return {
+        "sources": items,
+        "version": "0.4.0",
+        "phase3_tools": _phase3_tools_status(),
+        "phase4_tools": _phase4_tools_status(),
+    }
 
 
 def _phase3_tools_status() -> list[str]:
@@ -254,3 +299,7 @@ def _phase3_tools_status() -> list[str]:
         "compare_papers",
         "build_literature_review_outline",
     ]
+
+
+def _phase4_tools_status() -> list[str]:
+    return ["search_all", "ingest_youtube_research"]

@@ -5,6 +5,9 @@ from sportsci_mcp.adapters.physionet import PhysioNetAdapter
 from sportsci_mcp.adapters.pubmed import PubMedAdapter
 from sportsci_mcp.adapters.scrape import ScrapeAdapter, SsrnAdapter
 from sportsci_mcp.adapters.semantic_scholar import SemanticScholarAdapter
+from sportsci_mcp.adapters.osf import OsfAdapter
+from sportsci_mcp.adapters.figshare import FigshareAdapter
+from sportsci_mcp.adapters.sportdiscus import SportDiscusAdapter
 from sportsci_mcp.adapters.zenodo import ZenodoAdapter
 
 __all__ = [
@@ -17,4 +20,7 @@ __all__ = [
     "ZenodoAdapter",
     "KaggleAdapter",
     "PhysioNetAdapter",
+    "OsfAdapter",
+    "FigshareAdapter",
+    "SportDiscusAdapter",
 ]

@@ -38,6 +38,18 @@ literature:
     phase: 2
     mode: scrape
     notes: "SCORE Network — HTML discovery at scorenetwork.org"
+  osf:
+    enabled: true
+    phase: 4
+    notes: "osf.io preprints — public API, no key"
+  sportdiscus:
+    enabled: true
+    phase: 4
+    requires_auth: true
+    credentials_env:
+      - EBSCO_USER_ID
+      - EBSCO_PASSWORD
+    notes: "Institutional EBSCO / SPORTDiscus; optional EBSCO_PROFILE (default eds)"
 
 datasets:
   zenodo:
@@ -70,10 +82,14 @@ datasets:
     api_key_env: MENDELEY_ACCESS_TOKEN
     requires_auth: false
     notes: "HTML search; optional Mendeley API token"
+  figshare:
+    enabled: true
+    phase: 4
+    notes: "figshare.com datasets — public API, no key"
 
 scrape:
   generic:
     enabled: true
     phase: 1
-    user_agent: "SportSciMCP/0.3 (research; mailto:will@thetechlab.info)"
+    user_agent: "SportSciMCP/0.4 (research; mailto:will@thetechlab.info)"
   respect_robots: false

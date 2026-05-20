@@ -116,11 +116,15 @@ Ask your agent:
 | **arxiv** | Literature | Preprints (ML, methods, theory) |
 | **core** | Literature | Open-access full-text aggregation ([core.ac.uk](https://core.ac.uk)) |
 | **scorenetwork** | Literature | Concussion / SCORE resources ([scorenetwork.org](https://www.scorenetwork.org)) |
+| **osf** | Literature | Open preprints ([osf.io](https://osf.io)) |
 | **zenodo** | Datasets | General research datasets |
+| **figshare** | Datasets | Research outputs ([figshare.com](https://figshare.com)) |
 | **physionet** | Datasets | Physiology & biomedical signals ([physionet.org](https://physionet.org)) |
 | **simtk** | Datasets | Biomechanics simulation projects ([simtk.org](https://simtk.org)) |
 | **motrpac** | Datasets | Exercise omics ([motrpac-data.org](https://motrpac-data.org)) |
 | **mendeley_data** | Datasets | Shared datasets ([data.mendeley.com](https://data.mendeley.com)) — HTML search |
+| **osf** | Literature | Open preprints ([osf.io](https://osf.io)) |
+| **figshare** | Datasets | Research outputs ([figshare.com](https://figshare.com)) |
 | **scrape_url** | Web | Any public guideline or article page |
 
 Optional env vars (polite pools, not required): `PUBMED_EMAIL`, `OPENALEX_EMAIL`
@@ -143,6 +147,8 @@ Optional env vars (polite pools, not required): `PUBMED_EMAIL`, `OPENALEX_EMAIL`
 |----------|--------|-----------|
 | `DIMENSIONS_API_KEY` | [Dimensions.ai](https://app.dimensions.ai) | Dimensions account → API access |
 | `KAGGLE_USERNAME` + `KAGGLE_KEY` | [Kaggle](https://www.kaggle.com) | Account → Settings → API → Create token |
+| `EBSCO_USER_ID` + `EBSCO_PASSWORD` | [SPORTDiscus](https://www.ebsco.com/products/research-databases/sportdiscus) | Your university library EBSCO login |
+| `EBSCO_PROFILE` | EBSCO | Optional; default `eds` |
 
 If these are missing, SportSciMCP **skips** those sources and tells you why in `list_sources` — everything else still works.
 
@@ -170,8 +176,9 @@ Set `enabled: false` — no code changes required.
 |------|-------------|
 | `list_sources` | Active sources, phases, credential status |
 | `search_literature` | Papers across enabled literature adapters |
-| `search_datasets` | Datasets across Zenodo, PhysioNet, SimTK, MoTrPAC, Mendeley, Kaggle, … |
-| `get_record` | One item by ref (`pubmed:123`, `kaggle:owner/slug`, `core:456`, …) |
+| `search_datasets` | Datasets across Zenodo, PhysioNet, SimTK, MoTrPAC, Mendeley, Figshare, … |
+| `search_all` | **Literature + datasets in one call** |
+| `get_record` | One item by ref (`pubmed:123`, `osf:abc`, `figshare:123`, …) |
 | `scrape_url` | Fetch a public URL → title + text (no API key) |
 
 ### Research workflow
@@ -193,12 +200,15 @@ Set `enabled: false` — no code changes required.
 | `lookup_norms` | CMJ, sprint, Y-balance (`sportsci_mcp/data/norms.yaml`) |
 | `rtp_checklist` | ACL, hamstring, ankle (`sportsci_mcp/data/rtp/`) |
 
-### NotebookLM (uses your existing `nlm login`)
+### NotebookLM + YouTube (uses your existing `nlm login`)
 
 | Tool | Description |
 |------|-------------|
 | `notebooklm_list_notebooks` | Config aliases + live notebook list |
 | `notebooklm_add_source` | Add URL or text to a notebook |
+| `ingest_youtube_research` | **YouTube → TranscriptMCP → NotebookLM** (optional brief) |
+
+Requires [TranscriptMCP](https://github.com/The-TechLab/TranscriptMCP) cloned next to SportSciMCP (or set `TRANSCRIPT_MCP_PATH`).
 
 Notebook aliases live in `config/notebooks.yaml` (e.g. `acl_rehab`, `ai_stem_lab`).
 
@@ -224,11 +234,17 @@ Notebook aliases live in `config/notebooks.yaml` (e.g. `acl_rehab`, `ai_stem_lab
 - *"Lookup norms for **cmj_height_cm**, female, soccer, collegiate."*
 - *"Parse `~/data/team_srpe.csv` and calculate **ACWR** with 7-day acute and 28-day chronic windows."*
 
-### Web + NotebookLM
+### Web + NotebookLM + YouTube
 
 - *"Scrape this guideline URL and save a research brief tagged `rtp`."*
 - *"Get pubmed:36234567, format for NotebookLM, and add to **acl_rehab**."*
+- *"**Ingest this YouTube lecture** into acl_rehab: [url] — transcribe and add to NotebookLM."*
 - *"List my NotebookLM notebook aliases and add this paper URL to QAI Lab."*
+
+### One-shot search
+
+- *"**search_all** for hamstring injury prevention — literature and datasets, max 5 per source."*
+- *"search_all on ACL graft, sources: pubmed, osf, zenodo, figshare only."*
 
 ### Admin
 

@@ -18,6 +18,7 @@ from mcp.server.stdio import stdio_server
 from sportsci_mcp.registry import (
     get_record,
     list_sources_status,
+    search_all,
     search_datasets,
     search_literature,
 )
@@ -29,6 +30,7 @@ from sportsci_mcp.services.load import calc_training_load, parse_session_csv
 from sportsci_mcp.services.literature_tools import build_literature_review_outline, compare_papers
 from sportsci_mcp.services.norms import lookup_norms
 from sportsci_mcp.services.rtp import rtp_checklist
+from sportsci_mcp.services.youtube_pipeline import ingest_youtube_research
 
 server = Server("sportsci-mcp")
 
@@ -81,6 +83,45 @@ async def list_tools() -> list[types.Tool]:
                     "max_results_per_source": {"type": "integer", "default": 10},
                 },
                 "required": ["query"],
+            },
+        ),
+        types.Tool(
+            name="search_all",
+            description=(
+                "Search literature AND datasets in one call. "
+                "Optional literature_sources / dataset_sources subsets."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "literature_sources": {"type": "array", "items": {"type": "string"}},
+                    "dataset_sources": {"type": "array", "items": {"type": "string"}},
+                    "max_results_per_source": {"type": "integer", "default": 10},
+                    "year_from": {"type": "integer"},
+                    "year_to": {"type": "integer"},
+                },
+                "required": ["query"],
+            },
+        ),
+        types.Tool(
+            name="ingest_youtube_research",
+            description=(
+                "YouTube pipeline: TranscriptMCP (yt-dlp + Whisper) → text → NotebookLM. "
+                "Requires TranscriptMCP sibling repo or TRANSCRIPT_MCP_PATH."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "YouTube URL"},
+                    "notebook": {"type": "string", "description": "NotebookLM alias or UUID"},
+                    "title": {"type": "string"},
+                    "language": {"type": "string"},
+                    "wait": {"type": "boolean", "default": False},
+                    "save_brief_file": {"type": "boolean", "default": False},
+                    "tags": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["url", "notebook"],
             },
         ),
         types.Tool(
@@ -285,6 +326,31 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
                 args["query"],
                 sources=args.get("sources"),
                 max_results_per_source=args.get("max_results_per_source", 10),
+            )
+        )
+
+    if name == "search_all":
+        return _text_result(
+            search_all(
+                args["query"],
+                literature_sources=args.get("literature_sources"),
+                dataset_sources=args.get("dataset_sources"),
+                max_results_per_source=args.get("max_results_per_source", 10),
+                year_from=args.get("year_from"),
+                year_to=args.get("year_to"),
+            )
+        )
+
+    if name == "ingest_youtube_research":
+        return _text_result(
+            ingest_youtube_research(
+                args["url"],
+                args["notebook"],
+                title=args.get("title"),
+                language=args.get("language"),
+                wait=bool(args.get("wait")),
+                save_brief_file=bool(args.get("save_brief_file")),
+                tags=args.get("tags"),
             )
         )
 
